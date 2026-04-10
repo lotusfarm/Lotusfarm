@@ -1,0 +1,88 @@
+import { useState, useEffect } from 'react';
+
+function App() {
+  const [eggs, setEggs] = useState(0);
+  const [silver, setSilver] = useState(1000);
+  const [birds, setBirds] = useState([
+    { id: 1, name: 'Baby Bird', count: 1, production: 42 },
+  ]);
+  const [lastSave, setLastSave] = useState(Date.now());
+
+  useEffect(() => {
+    const saved = localStorage.getItem('birdsEmpireSave');
+    if (saved) {
+      const data = JSON.parse(saved);
+      setEggs(data.eggs || 0);
+      setSilver(data.silver || 1000);
+      setBirds(data.birds || [{ id: 1, name: 'Baby Bird', count: 1, production: 42 }]);
+      setLastSave(data.lastSave || Date.now());
+    }
+
+    const now = Date.now();
+    const offlineTime = (now - lastSave) / 1000 / 3600;
+    const totalProd = birds.reduce((sum, b) => sum + b.count * b.production, 0);
+    const offlineEggs = Math.floor(totalProd * offlineTime);
+    if (offlineEggs > 0) setEggs(prev => prev + offlineEggs);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('birdsEmpireSave', JSON.stringify({
+      eggs, silver, birds, lastSave: Date.now()
+    }));
+  }, [eggs, silver, birds]);
+
+  const totalProduction = birds.reduce((sum, b) => sum + b.count * b.production, 0);
+
+  const harvest = () => alert('✅ Œufs récoltés dans l’Entrepôt !');
+
+  const exchange = (amount) => {
+    if (eggs >= amount) {
+      setEggs(prev => prev - amount);
+      setSilver(prev => prev + Math.floor(amount * 1.1));
+      alert(`✅ ${amount} œufs → ${Math.floor(amount * 1.1)} Silver (+10%)`);
+    }
+  };
+
+  const buyBird = (name, prod, cost) => {
+    if (silver >= cost) {
+      setSilver(prev => prev - cost);
+      setBirds(prev => {
+        const copy = [...prev];
+        const existing = copy.find(b => b.name === name);
+        if (existing) existing.count++;
+        else copy.push({ id: Date.now(), name, count: 1, production: prod });
+        return copy;
+      });
+      alert(`✅ Tu as acheté un ${name} !`);
+    } else alert('Pas assez de Silver');
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-blue-400 to-green-400 p-4 text-white">
+      <h1 className="text-4xl text-center mb-6">🐦 Birds Empire</h1>
+
+      <div className="bg-white/20 backdrop-blur rounded-3xl p-6 text-center mb-6">
+        <p className="text-6xl font-bold mb-2">{Math.floor(eggs)} 🥚</p>
+        <p className="text-xl">{totalProduction} œufs/heure</p>
+        <button onClick={harvest} className="mt-6 bg-yellow-400 hover:bg-yellow-300 text-black px-10 py-4 rounded-2xl text-2xl font-bold w-full">Récolter dans l’Entrepôt</button>
+      </div>
+
+      <div className="bg-white/20 backdrop-blur rounded-3xl p-6 mb-6">
+        <h2 className="text-2xl mb-4">🛒 Boutique Oiseaux</h2>
+        <button onClick={() => buyBird('Baby Bird', 42, 1000)} className="block w-full bg-white/30 py-4 mb-3 rounded-2xl text-left px-4">Baby Bird (+42/h) — 1000 Silver</button>
+        <button onClick={() => buyBird('Green Bird', 221, 5000)} className="block w-full bg-white/30 py-4 mb-3 rounded-2xl text-left px-4">Green Bird (+221/h) — 5000 Silver</button>
+        <button onClick={() => buyBird('Yellow Bird', 850, 15000)} className="block w-full bg-white/30 py-4 rounded-2xl text-left px-4">Yellow Bird (+850/h) — 15 000 Silver</button>
+      </div>
+
+      <div className="bg-white/20 backdrop-blur rounded-3xl p-6">
+        <h2 className="text-2xl mb-4">🔄 Échanger</h2>
+        <button onClick={() => exchange(100)} className="block w-full bg-white/30 py-4 mb-3 rounded-2xl">100 œufs → 110 Silver (+10%)</button>
+        <button onClick={() => exchange(500)} className="block w-full bg-white/30 py-4 rounded-2xl">500 œufs → 550 Silver (+10%)</button>
+      </div>
+
+      <p className="text-center text-xs mt-10 opacity-70">Jeu Birds Empire clone • Les pubs viendront plus tard via RichAds</p>
+    </div>
+  );
+}
+
+export default App;
